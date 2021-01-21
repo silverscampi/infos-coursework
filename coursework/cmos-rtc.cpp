@@ -92,8 +92,19 @@ public:
 				|| last_buf[mon] != new_buf[mon]
 				|| last_buf[yer] != new_buf[yer] );
 
-		
+		// Check if values are BCD - convert to binary if so
+		uint8_t statusB = read_cmos(0x0B);
+		if (~statusB & 0x02) {
+			new_buf[sec] = (new_buf[sec] & 0x0F) + ((new_buf[sec] / 16) * 10);
+			new_buf[min] = (new_buf[min] & 0x0F) + ((new_buf[min] / 16) * 10);
+			new_buf[hor] =   ( (new_buf[hor] & 0x0F) + (((new_buf[hor] & 0x70) / 16) * 10) )
+						   | (new_buf[hor] & 0x80);
+			new_buf[dom] = (new_buf[dom] & 0x0F) + ((new_buf[dom] / 16) * 10);
+			new_buf[mon] = (new_buf[mon] & 0x0F) + ((new_buf[mon] / 16) * 10);
+			new_buf[yer] = (new_buf[yer] & 0x0F) + ((new_buf[yer] / 16) * 10);
+		}
 
+		// Return RTC time
 
 	}
 };
