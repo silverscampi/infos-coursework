@@ -8,12 +8,14 @@
  */
 #include <infos/drivers/timer/rtc.h>
 #include <arch/x86/pio.h>
-#include <util/lock.h>
+#include <infos/util/lock.h>
+#include <infos/kernel/log.h>
 
 using namespace infos::drivers;
 using namespace infos::drivers::timer;
 using namespace infos::util;
 using namespace infos::arch::x86;
+using namespace infos::kernel;
 
 class CMOSRTC : public RTC {
 public:
@@ -32,7 +34,7 @@ public:
 
 	int update_in_progress() {
 		__outb(0x70, 0x0A);
-		return __inb(0x71);
+		return (__inb(0x71) & 0x80);
 	}
 
 	uint8_t read_cmos(int reg) {
@@ -53,14 +55,15 @@ public:
 	{
 		// Disable interrupts
 		UniqueIRQLock irqlock;
-
-		// Because interrupts are disabled and thus RTC cannot interrupt on a completed update, must avoid bad RTC values during updates by reading twice in a row:
+				// Because interrupts are disabled and thus RTC cannot interrupt on a completed update, must avoid bad RTC values during updates by reading twice in a row:
 		
 		uint8_t last_buf[6];
 		uint8_t new_buf[6];
 
 		// Wait while update is in progress
-		while (update_in_progress()) {};
+		while (update_in_progress()) {
+			syslog.messagef(LogLevel::DEBUG, "RTC update in progress...");
+		};
 
 		// Read RTC registers into buffer
 		new_buf[sec] = read_cmos(0x00);
@@ -76,7 +79,9 @@ public:
 			}
 
 			// Wait while update is in progress
-			while (update_in_progress()) {};
+			while (update_in_progress()) {
+				syslog.messagef(LogLevel::DEBUG, "RTC update in progress...");
+			};
 
 			// Read RTC registers again 
 			new_buf[sec] = read_cmos(0x00);
@@ -94,7 +99,8 @@ public:
 
 		// Check if values are BCD - convert to binary if so
 		uint8_t statusB = read_cmos(0x0B);
-		if (~statusB & 0x02) {
+		syslog.messagef(LogLevel::DEBUG, "statusB: %x", statusB);
+		if (!(statusB & 0x04)) {
 			new_buf[sec] = (new_buf[sec] & 0x0F) + ((new_buf[sec] / 16) * 10);
 			new_buf[min] = (new_buf[min] & 0x0F) + ((new_buf[min] / 16) * 10);
 			new_buf[hor] =   ( (new_buf[hor] & 0x0F) + (((new_buf[hor] & 0x70) / 16) * 10) )
