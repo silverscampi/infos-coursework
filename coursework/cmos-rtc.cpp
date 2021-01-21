@@ -105,7 +105,12 @@ public:
 		}
 
 		// Return RTC time
-
+		tp.seconds = new_buf[sec];
+		tp.minutes = new_buf[min];
+		tp.hours   = new_buf[hor];
+		tp.day_of_month = new_buf[dom];
+		tp.month   = new_buf[mon];
+		tp.year    = new_buf[yer];
 	}
 };
 
