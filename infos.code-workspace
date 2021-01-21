@@ -13,7 +13,9 @@
 	"settings": {
 		"files.associations": {
 			"*.tcc": "cpp",
-			"string": "cpp"
+			"string": "cpp",
+			"atomic": "cpp",
+			"cstdint": "cpp"
 		}
 	}
 }
